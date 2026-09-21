@@ -1,610 +1,343 @@
-"use client";
+import Link from "next/link";
+import SiteHeader from "./components/SiteHeader";
+import { spotifyFetch } from "../lib/spotify";
 
-import { useState } from "react";
-import SearchBar from "./components/SearchBar";
+type SpotifyImage = {
+  url: string;
+  width: number;
+  height: number;
+};
 
-const trendingAlbums = [
+type SpotifyArtist = {
+  name: string;
+};
+
+type SpotifyAlbum = {
+  id: string;
+  name: string;
+  release_date: string;
+  images: SpotifyImage[];
+  artists: SpotifyArtist[];
+};
+
+type SpotifySearchResponse = {
+  albums?: {
+    items: SpotifyAlbum[];
+  };
+};
+
+async function getAlbum(query: string) {
+  try {
+    const data = (await spotifyFetch("/search", {
+      q: query,
+      type: "album",
+      market: "BR",
+      limit: "1",
+    })) as SpotifySearchResponse;
+
+    return data.albums?.items?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function getPopularAlbums() {
+  const queries = [
+    "Blonde Frank Ocean",
+    "GNX Kendrick Lamar",
+    "SOS SZA",
+    "UTOPIA Travis Scott",
+    "Channel Orange Frank Ocean",
+  ];
+
+  const albums = await Promise.all(
+    queries.map((query) => getAlbum(query))
+  );
+
+  return albums.filter(Boolean) as SpotifyAlbum[];
+}
+
+const reviews = [
   {
-    title: "Blonde",
+    user: "natan",
+    album: "Blonde",
     artist: "Frank Ocean",
-    year: "2016",
-    rating: "4.8",
-    image:
-      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800&q=90",
+    rating: "★★★★★",
+    text: "One of those albums that feels different every time you come back to it.",
   },
   {
-    title: "GNX",
+    user: "vinicius",
+    album: "GNX",
     artist: "Kendrick Lamar",
-    year: "2024",
-    rating: "4.7",
-    image:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=90",
+    rating: "★★★★½",
+    text: "A record that gets better when you stop trying to rank every track.",
   },
   {
-    title: "SOS",
-    artist: "SZA",
-    year: "2022",
-    rating: "4.6",
-    image:
-      "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=800&q=90",
-  },
-  {
-    title: "UTOPIA",
+    user: "luiz",
+    album: "UTOPIA",
     artist: "Travis Scott",
-    year: "2023",
-    rating: "4.5",
-    image:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=90",
+    rating: "★★★★½",
+    text: "Huge production, strange moments and an atmosphere that carries the whole thing.",
   },
 ];
 
-const recentlyRated = [
-  {
-    title: "Channel Orange",
-    artist: "Frank Ocean",
-    rating: "5.0",
-    image:
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=90",
-  },
-  {
-    title: "Blonde",
-    artist: "Frank Ocean",
-    rating: "4.8",
-    image:
-      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&q=90",
-  },
-  {
-    title: "To Pimp a Butterfly",
-    artist: "Kendrick Lamar",
-    rating: "4.9",
-    image:
-      "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=600&q=90",
-  },
-  {
-    title: "IGOR",
-    artist: "Tyler, The Creator",
-    rating: "4.7",
-    image:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=90",
-  },
-];
-
-const popularLists = [
+const featuredLists = [
   {
     title: "Albums everyone should hear",
     creator: "musicboxd",
     count: "128 albums",
+    image:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=700&q=90",
   },
   {
     title: "Late night essentials",
     creator: "musicboxd",
     count: "64 albums",
+    image:
+      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=700&q=90",
   },
   {
     title: "Modern classics",
     creator: "musicboxd",
     count: "93 albums",
+    image:
+      "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=700&q=90",
   },
 ];
 
-export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const browseYears = [
+  "2026",
+  "2025",
+  "2024",
+  "2023",
+  "2020s",
+  "2010s",
+  "2000s",
+  "1990s",
+];
+
+const genres = [
+  "Hip-Hop",
+  "R&B",
+  "Pop",
+  "Rock",
+  "Jazz",
+  "Electronic",
+  "Indie",
+  "Soul",
+];
+
+export default async function Home() {
+  const popularAlbums = await getPopularAlbums();
 
   return (
     <div className="min-h-screen bg-[#121212] text-white">
-      {/* HEADER */}
+      <SiteHeader />
 
-      <header className="fixed left-0 right-0 top-0 z-50 h-[72px] border-b border-[#212121] bg-[#121212]/95 backdrop-blur-xl">
-        <div className="flex h-full items-center px-5 md:px-7">
-          {/* LOGO */}
-
-          <a
-            href="/"
-            className="flex w-[265px] shrink-0 items-center gap-3"
-          >
-            <img
-              src="/musicboxd-logo.png"
-              alt="Musicboxd"
-              className="h-10 w-11 object-contain"
-            />
-
-            <span className="text-xl font-bold tracking-tight">
-              musicboxd
-            </span>
-          </a>
-
-          {/* SEARCH */}
-
-          <div className="hidden flex-1 md:flex">
-            <SearchBar />
-          </div>
-
-          {/* DESKTOP NAV */}
-
-          <nav className="ml-auto hidden items-center gap-7 lg:flex">
-            <a
-              href="#features"
-              className="text-sm font-semibold text-[#b3b3b3] transition-colors hover:text-white"
-            >
-              Features
-            </a>
-
-            <a
-              href="#explore"
-              className="text-sm font-semibold text-[#b3b3b3] transition-colors hover:text-white"
-            >
-              Explore
-            </a>
-
-            <a
-              href="#rank"
-              className="text-sm font-semibold text-[#b3b3b3] transition-colors hover:text-white"
-            >
-              Rank
-            </a>
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full text-[#b3b3b3] transition-colors hover:bg-[#212121] hover:text-white">
-              ☾
-            </button>
-
-            <button className="flex h-9 w-9 items-center justify-center rounded-full bg-[#212121] text-sm font-bold text-white">
-              U
-            </button>
-          </nav>
-
-          {/* MOBILE MENU */}
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#212121] text-xl lg:hidden"
-          >
-            ☰
-          </button>
-        </div>
-      </header>
-
-      {/* MOBILE NAV */}
-
-      {mobileMenuOpen && (
-        <div className="fixed left-0 right-0 top-[72px] z-40 border-b border-[#212121] bg-[#121212] p-5 lg:hidden">
-          <div className="mb-5">
-            <SearchBar />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <MobileNav
-              label="Home"
-              href="#"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-
-            <MobileNav
-              label="Explore"
-              href="#explore"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-
-            <MobileNav
-              label="Rank"
-              href="#rank"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-
-            <MobileNav
-              label="Lists"
-              href="#lists"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* SIDEBAR */}
-
-      <aside className="fixed bottom-0 left-0 top-[72px] hidden w-[265px] border-r border-[#212121] bg-[#121212] p-5 md:block">
-        <div className="flex h-full flex-col">
-          <div className="space-y-1">
-            <SidebarItem
-              icon="⌂"
-              label="Home"
-              active
-            />
-
-            <SidebarItem
-              icon="⌕"
-              label="Explore"
-            />
-
-            <SidebarItem
-              icon="↗"
-              label="Rank"
-            />
-
-            <SidebarItem
-              icon="▤"
-              label="Lists"
-            />
-
-            <SidebarItem
-              icon="◷"
-              label="Diary"
-            />
-
-            <SidebarItem
-              icon="◎"
-              label="Profile"
-            />
-          </div>
-
-          <div className="mt-9">
-            <p className="mb-4 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#535353]">
-              Recently Played
-            </p>
-
-            <div className="space-y-3">
-              <MiniAlbum
-                image={trendingAlbums[0].image}
-                title="Blonde"
-                artist="Frank Ocean"
-              />
-
-              <MiniAlbum
-                image={trendingAlbums[1].image}
-                title="GNX"
-                artist="Kendrick Lamar"
-              />
-
-              <MiniAlbum
-                image={trendingAlbums[2].image}
-                title="SOS"
-                artist="SZA"
-              />
-            </div>
-          </div>
-
-          {/* MINI PLAYER */}
-
-          <div className="mt-auto rounded-2xl bg-[#212121] p-4">
-            <div className="flex items-center gap-3">
-              <img
-                src={trendingAlbums[0].image}
-                alt=""
-                className="h-11 w-11 rounded-lg object-cover"
-              />
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold">
-                  Blonde
-                </p>
-
-                <p className="truncate text-[11px] text-[#b3b3b3]">
-                  Frank Ocean
-                </p>
-              </div>
-
-              <button className="text-lg text-[#1db954]">
-                ▶
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* MAIN */}
-
-      <main className="pt-[72px] md:ml-[265px]">
+      <main className="pt-[113px] md:pt-[68px]">
         {/* HERO */}
 
-        <section className="relative overflow-hidden border-b border-[#212121]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(29,185,84,0.16),transparent_35%)]" />
-
-          <div className="relative mx-auto max-w-7xl px-6 py-20 md:px-10 md:py-28">
-            <div className="max-w-3xl">
-              <p className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-[#1db954]">
-                YOUR MUSIC. YOUR HISTORY.
+        <section className="border-b border-[#242424]">
+          <div className="musicboxd-container py-14 md:py-20">
+            <div className="max-w-4xl">
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.25em] text-[#1db954]">
+                MUSICBOXD
               </p>
 
-              <h1 className="text-5xl font-black leading-[0.95] tracking-tight md:text-7xl lg:text-8xl">
-                Your Music
+              <h1 className="text-4xl font-black leading-[1.02] tracking-[-0.045em] sm:text-5xl md:text-6xl lg:text-7xl">
+                Discover music.
                 <br />
-                Journey Starts Here.
+                Keep your history.
               </h1>
 
-              <p className="mt-7 max-w-2xl text-base leading-7 text-[#b3b3b3] md:text-lg">
-                Rate albums, write reviews, build lists,
-                discover new music and keep track of
-                everything you&apos;ve listened to.
+              <p className="mt-6 max-w-2xl text-base leading-7 text-[#a7a7a7] md:text-lg">
+                Rate albums, write reviews, create lists and discover
+                what other people are listening to.
               </p>
-
-              <div className="mt-9 flex flex-wrap gap-3">
-                <a
-                  href="#explore"
-                  className="rounded-full bg-[#1db954] px-7 py-3.5 text-sm font-bold text-black transition-transform hover:scale-105"
-                >
-                  Explore Albums
-                </a>
-
-                <button className="rounded-full border border-[#535353] px-7 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#212121]">
-                  Album Bracket
-                </button>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* TRENDING */}
+        {/* POPULAR */}
 
-        <section
-          id="explore"
-          className="mx-auto max-w-7xl px-6 py-14 md:px-10"
-        >
-          <SectionTitle
-            eyebrow="DISCOVER"
-            title="Trending Albums"
+        <section className="musicboxd-container py-12 md:py-16">
+          <SectionHeading
+            eyebrow="TRENDING"
+            title="Popular Music This Week"
             action="View all"
           />
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {trendingAlbums.map((album) => (
-              <AlbumCard
-                key={album.title}
-                {...album}
-              />
-            ))}
-          </div>
+          {popularAlbums.length > 0 ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {popularAlbums.map((album) => (
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-[#292929] bg-[#181818] p-8 text-sm text-[#888]">
+              Spotify não conseguiu carregar os álbuns agora.
+            </div>
+          )}
         </section>
 
-        {/* RECENTLY RATED */}
+        {/* REVIEWS */}
 
-        <section className="mx-auto max-w-7xl px-6 pb-14 md:px-10">
-          <SectionTitle
-            eyebrow="COMMUNITY"
-            title="Recently Rated"
-            action="See all"
-          />
+        <section className="border-y border-[#242424] bg-[#151515]">
+          <div className="musicboxd-container py-12 md:py-16">
+            <SectionHeading
+              eyebrow="COMMUNITY"
+              title="Just Reviewed"
+              action="See all"
+            />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {recentlyRated.map((album) => (
-              <RecentCard
-                key={album.title}
-                {...album}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* COMMUNITY */}
-
-        <section
-          id="features"
-          className="mx-auto max-w-7xl px-6 pb-14 md:px-10"
-        >
-          <div className="overflow-hidden rounded-3xl border border-[#212121] bg-[#181818]">
-            <div className="grid md:grid-cols-2">
-              <div className="p-8 md:p-12">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#1db954]">
-                  THE COMMUNITY
-                </p>
-
-                <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
-                  Your taste.
-                  <br />
-                  Your story.
-                </h2>
-
-                <p className="mt-5 max-w-lg leading-7 text-[#b3b3b3]">
-                  Musicboxd gives you a place to keep
-                  your music history, share your opinions
-                  and discover what other people are
-                  listening to.
-                </p>
-
-                <button className="mt-7 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform hover:scale-105">
-                  Join the community
-                </button>
-              </div>
-
-              <div className="relative min-h-[300px] overflow-hidden bg-[#212121]">
-                <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#1db954]/20 blur-3xl" />
-
-                <div className="absolute bottom-10 left-10 rotate-[-8deg]">
-                  <img
-                    src={trendingAlbums[0].image}
-                    alt=""
-                    className="h-44 w-44 rounded-xl object-cover shadow-2xl"
-                  />
-                </div>
-
-                <div className="absolute right-12 top-10 rotate-[7deg]">
-                  <img
-                    src={trendingAlbums[1].image}
-                    alt=""
-                    className="h-40 w-40 rounded-xl object-cover shadow-2xl"
-                  />
-                </div>
-
-                <div className="absolute bottom-8 right-28 rotate-[-3deg]">
-                  <img
-                    src={trendingAlbums[2].image}
-                    alt=""
-                    className="h-32 w-32 rounded-xl object-cover shadow-2xl"
-                  />
-                </div>
-              </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {reviews.map((review) => (
+                <ReviewCard
+                  key={`${review.user}-${review.album}`}
+                  {...review}
+                />
+              ))}
             </div>
           </div>
         </section>
 
         {/* LISTS */}
 
-        <section
-          id="lists"
-          className="mx-auto max-w-7xl px-6 pb-20 md:px-10"
-        >
-          <SectionTitle
+        <section className="musicboxd-container py-12 md:py-16">
+          <SectionHeading
             eyebrow="CURATED"
-            title="Popular Lists"
+            title="Featured Lists"
             action="View all"
           />
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {popularLists.map((list) => (
-              <div
+          <div className="grid gap-5 md:grid-cols-3">
+            {featuredLists.map((list) => (
+              <ListCard
                 key={list.title}
-                className="rounded-2xl border border-[#212121] bg-[#181818] p-6 transition-colors hover:bg-[#212121]"
-              >
-                <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-xl bg-[#1db954]/15 text-xl text-[#1db954]">
-                  ▤
-                </div>
-
-                <h3 className="text-xl font-bold">
-                  {list.title}
-                </h3>
-
-                <div className="mt-3 flex items-center justify-between text-sm text-[#b3b3b3]">
-                  <span>by {list.creator}</span>
-
-                  <span>{list.count}</span>
-                </div>
-              </div>
+                {...list}
+              />
             ))}
           </div>
         </section>
 
-        {/* FOOTER */}
+        {/* BROWSE */}
 
-        <footer className="border-t border-[#212121]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-10 text-sm text-[#535353] md:flex-row md:items-center md:justify-between md:px-10">
-            <div className="flex items-center gap-2">
-              <img
-                src="/musicboxd-logo.png"
-                alt=""
-                className="h-6 w-7 object-contain opacity-70"
+        <section className="border-y border-[#242424] bg-[#151515]">
+          <div className="musicboxd-container py-12 md:py-16">
+            <SectionHeading
+              eyebrow="EXPLORE"
+              title="Browse Music"
+              action=""
+            />
+
+            <div className="grid gap-10 md:grid-cols-2">
+              <BrowseGroup
+                title="By year"
+                items={browseYears}
               />
 
-              <span>musicboxd</span>
+              <BrowseGroup
+                title="By genre"
+                items={genres}
+              />
             </div>
 
-            <div className="flex gap-6">
-              <a
-                href="#"
-                className="transition-colors hover:text-[#b3b3b3]"
-              >
-                About
-              </a>
-
-              <a
-                href="#"
-                className="transition-colors hover:text-[#b3b3b3]"
-              >
-                Privacy
-              </a>
-
-              <a
-                href="#"
-                className="transition-colors hover:text-[#b3b3b3]"
-              >
-                Terms
-              </a>
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <BrowseButton label="Highest rated" />
+              <BrowseButton label="Most popular" />
+              <BrowseButton label="Recently released" />
+              <BrowseButton label="Most reviewed" />
             </div>
-
-            <span>© 2026 Musicboxd</span>
           </div>
-        </footer>
+        </section>
+
+        {/* FIND MUSIC */}
+
+        <section className="musicboxd-container py-16 md:py-24">
+          <div className="overflow-hidden rounded-3xl border border-[#292929] bg-[#181818]">
+            <div className="p-7 md:p-12">
+              <div className="max-w-2xl">
+                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#1db954]">
+                  FIND SOMETHING NEW
+                </p>
+
+                <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] md:text-5xl">
+                  What are you listening to?
+                </h2>
+
+                <p className="mt-4 max-w-xl text-sm leading-6 text-[#a7a7a7] md:text-base">
+                  Search for an album, artist or track and start
+                  building your music history.
+                </p>
+
+                <div className="mt-7">
+                  <Link
+                    href="/"
+                    className="inline-flex rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.02]"
+                  >
+                    Search Music
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* FOOTER */}
+
+      <footer className="border-t border-[#242424]">
+        <div className="musicboxd-container flex flex-col gap-5 py-8 text-xs text-[#626262] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <img
+              src="/musicboxd-logo.png"
+              alt=""
+              className="h-6 w-6 object-contain opacity-60"
+            />
+
+            <span className="font-semibold">
+              MUSICBOXD
+            </span>
+          </div>
+
+          <div className="flex gap-5">
+            <a
+              href="#"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              About
+            </a>
+
+            <a
+              href="#"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              Privacy
+            </a>
+
+            <a
+              href="#"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              Terms
+            </a>
+          </div>
+
+          <span>© 2026 Musicboxd</span>
+        </div>
+      </footer>
     </div>
   );
 }
 
-/* SIDEBAR ITEM */
+/* -------------------------------- */
+/* SECTION HEADING                   */
+/* -------------------------------- */
 
-function SidebarItem({
-  icon,
-  label,
-  active = false,
-}: {
-  icon: string;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      className={`flex w-full items-center gap-4 rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
-        active
-          ? "bg-[#212121] text-white"
-          : "text-[#b3b3b3] hover:bg-[#181818] hover:text-white"
-      }`}
-    >
-      <span
-        className={`flex h-6 w-6 items-center justify-center text-lg ${
-          active ? "text-[#1db954]" : ""
-        }`}
-      >
-        {icon}
-      </span>
-
-      {label}
-    </button>
-  );
-}
-
-/* MOBILE NAV */
-
-function MobileNav({
-  label,
-  href,
-  onClick,
-}: {
-  label: string;
-  href: string;
-  onClick: () => void;
-}) {
-  return (
-    <a
-      href={href}
-      onClick={onClick}
-      className="rounded-xl px-4 py-3 text-sm font-semibold text-[#b3b3b3] hover:bg-[#212121] hover:text-white"
-    >
-      {label}
-    </a>
-  );
-}
-
-/* MINI ALBUM */
-
-function MiniAlbum({
-  image,
-  title,
-  artist,
-}: {
-  image: string;
-  title: string;
-  artist: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <img
-        src={image}
-        alt=""
-        className="h-10 w-10 rounded-lg object-cover"
-      />
-
-      <div className="min-w-0">
-        <p className="truncate text-xs font-semibold">
-          {title}
-        </p>
-
-        <p className="truncate text-[11px] text-[#535353]">
-          {artist}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* SECTION TITLE */
-
-function SectionTitle({
+function SectionHeading({
   eyebrow,
   title,
   action,
@@ -614,104 +347,222 @@ function SectionTitle({
   action: string;
 }) {
   return (
-    <div className="mb-6 flex items-end justify-between">
+    <div className="mb-7 flex items-end justify-between gap-5">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1db954]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
           {eyebrow}
         </p>
 
-        <h2 className="mt-1 text-3xl font-black tracking-tight">
+        <h2 className="mt-1 text-2xl font-black tracking-[-0.025em] md:text-3xl">
           {title}
         </h2>
       </div>
 
-      <button className="text-sm font-semibold text-[#b3b3b3] transition-colors hover:text-white">
-        {action} →
-      </button>
+      {action && (
+        <button
+          type="button"
+          className="shrink-0 text-xs font-bold text-[#888] transition-colors hover:text-white"
+        >
+          {action} →
+        </button>
+      )}
     </div>
   );
 }
 
-/* ALBUM CARD */
+/* -------------------------------- */
+/* ALBUM CARD                       */
+/* -------------------------------- */
 
 function AlbumCard({
-  title,
-  artist,
-  year,
-  rating,
-  image,
+  album,
 }: {
-  title: string;
-  artist: string;
-  year: string;
-  rating: string;
-  image: string;
+  album: SpotifyAlbum;
 }) {
+  const image = album.images?.[0]?.url;
+  const artist = album.artists?.[0]?.name ?? "Unknown artist";
+  const year = album.release_date?.slice(0, 4) ?? "";
+
   return (
-    <div className="group cursor-pointer">
-      <div className="relative overflow-hidden rounded-2xl bg-[#212121]">
-        <img
-          src={image}
-          alt={title}
-          className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+    <Link
+      href={`/album/${album.id}`}
+      className="group min-w-0"
+    >
+      <div className="relative overflow-hidden rounded-xl bg-[#1b1b1b]">
+        {image ? (
+          <img
+            src={image}
+            alt={album.name}
+            className="musicboxd-cover aspect-square w-full object-cover"
+          />
+        ) : (
+          <div className="aspect-square w-full bg-[#222]" />
+        )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-        <div className="absolute bottom-4 left-4 rounded-full bg-black/80 px-3 py-1.5 text-xs font-bold opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-          ★ {rating}
+        <div className="absolute bottom-3 left-3 rounded-full bg-black/80 px-2.5 py-1 text-[10px] font-bold opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+          View album →
         </div>
       </div>
 
-      <div className="mt-3">
-        <h3 className="truncate font-bold">{title}</h3>
+      <div className="mt-3 min-w-0">
+        <h3 className="truncate text-sm font-bold">
+          {album.name}
+        </h3>
 
-        <p className="mt-1 truncate text-sm text-[#b3b3b3]">
+        <p className="mt-1 truncate text-xs text-[#a0a0a0]">
           {artist}
         </p>
 
-        <p className="mt-1 text-xs text-[#535353]">
+        <p className="mt-1 text-[11px] text-[#5f5f5f]">
           {year}
         </p>
       </div>
+    </Link>
+  );
+}
+
+/* -------------------------------- */
+/* REVIEW CARD                      */
+/* -------------------------------- */
+
+function ReviewCard({
+  user,
+  album,
+  artist,
+  rating,
+  text,
+}: {
+  user: string;
+  album: string;
+  artist: string;
+  rating: string;
+  text: string;
+}) {
+  return (
+    <article className="musicboxd-card rounded-2xl border border-[#292929] bg-[#191919] p-5">
+      <div>
+        <p className="text-[11px] text-[#6e6e6e]">
+          {user} reviewed
+        </p>
+
+        <h3 className="mt-1 text-sm font-bold">
+          {album}
+        </h3>
+
+        <p className="mt-0.5 text-xs text-[#888]">
+          {artist}
+        </p>
+
+        <p className="mt-2 text-[11px] tracking-wide text-[#1db954]">
+          {rating}
+        </p>
+      </div>
+
+      <p className="mt-5 text-sm leading-6 text-[#b0b0b0]">
+        “{text}”
+      </p>
+    </article>
+  );
+}
+
+/* -------------------------------- */
+/* LIST CARD                        */
+/* -------------------------------- */
+
+function ListCard({
+  title,
+  creator,
+  count,
+  image,
+}: {
+  title: string;
+  creator: string;
+  count: string;
+  image: string;
+}) {
+  return (
+    <Link
+      href="/lists"
+      className="musicboxd-card group overflow-hidden rounded-2xl border border-[#292929] bg-[#181818]"
+    >
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={image}
+          alt=""
+          className="musicboxd-cover h-full w-full object-cover"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+
+        <div className="absolute bottom-4 left-4">
+          <span className="rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+            {count}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-base font-bold">
+          {title}
+        </h3>
+
+        <p className="mt-2 text-xs text-[#777]">
+          by {creator}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+/* -------------------------------- */
+/* BROWSE GROUP                     */
+/* -------------------------------- */
+
+function BrowseGroup({
+  title,
+  items,
+}: {
+  title: string;
+  items: string[];
+}) {
+  return (
+    <div>
+      <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.15em] text-[#777]">
+        {title}
+      </h3>
+
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className="rounded-full border border-[#303030] bg-[#181818] px-4 py-2 text-xs font-semibold text-[#b0b0b0] transition-colors hover:border-[#555] hover:bg-[#242424] hover:text-white"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-/* RECENT CARD */
+/* -------------------------------- */
+/* BROWSE BUTTON                    */
+/* -------------------------------- */
 
-function RecentCard({
-  title,
-  artist,
-  rating,
-  image,
+function BrowseButton({
+  label,
 }: {
-  title: string;
-  artist: string;
-  rating: string;
-  image: string;
+  label: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-[#212121] bg-[#181818] p-4 transition-colors hover:bg-[#212121]">
-      <img
-        src={image}
-        alt={title}
-        className="h-16 w-16 shrink-0 rounded-xl object-cover"
-      />
-
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-bold">
-          {title}
-        </h3>
-
-        <p className="mt-1 truncate text-xs text-[#b3b3b3]">
-          {artist}
-        </p>
-
-        <div className="mt-2 text-xs font-bold text-[#1db954]">
-          ★ {rating}
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      className="rounded-xl border border-[#292929] bg-[#181818] px-4 py-4 text-xs font-bold text-[#aaa] transition-colors hover:bg-[#222] hover:text-white"
+    >
+      {label}
+    </button>
   );
 }

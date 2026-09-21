@@ -2,10 +2,13 @@
 
 :root {
   --musicboxd-green: #1db954;
-  --musicboxd-card: #212121;
   --musicboxd-background: #121212;
-  --musicboxd-gray: #535353;
-  --musicboxd-text-secondary: #b3b3b3;
+  --musicboxd-surface: #181818;
+  --musicboxd-surface-2: #1f1f1f;
+  --musicboxd-surface-3: #242424;
+  --musicboxd-border: #2a2a2a;
+  --musicboxd-gray: #6b6b6b;
+  --musicboxd-text-secondary: #a7a7a7;
 }
 
 * {
@@ -14,17 +17,28 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--musicboxd-background);
 }
 
 body {
   margin: 0;
-  background: #121212;
+  min-height: 100vh;
+  background: var(--musicboxd-background);
   color: white;
-  font-family: Gotham, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    Gotham,
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -32,7 +46,102 @@ button {
   cursor: pointer;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+}
+
 ::selection {
-  background: #1db954;
+  background: var(--musicboxd-green);
   color: #000;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #383838;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+/* -------------------------------- */
+/* MUSICBOXD UTILITIES               */
+/* -------------------------------- */
+
+.musicboxd-container {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.musicboxd-divider {
+  border-color: var(--musicboxd-border);
+}
+
+.musicboxd-muted {
+  color: var(--musicboxd-text-secondary);
+}
+
+/* -------------------------------- */
+/* HOVER EFFECTS                     */
+/* -------------------------------- */
+
+.musicboxd-card {
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.musicboxd-card:hover {
+  background: var(--musicboxd-surface-2);
+}
+
+.musicboxd-cover {
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 300ms ease;
+}
+
+.musicboxd-card:hover .musicboxd-cover {
+  transform: scale(1.035);
+}
+
+/* -------------------------------- */
+/* SEARCH                            */
+/* -------------------------------- */
+
+input::placeholder {
+  color: #6f6f6f;
+}
+
+input:focus {
+  outline: none;
+}
+
+/* -------------------------------- */
+/* MOBILE                            */
+/* -------------------------------- */
+
+@media (max-width: 768px) {
+  .musicboxd-container {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 }
