@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --musicboxd-green: #1db954;
+  --musicboxd-card: #212121;
+  --musicboxd-background: #121212;
+  --musicboxd-gray: #535353;
+  --musicboxd-text-secondary: #b3b3b3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #121212;
+  color: white;
+  font-family: Gotham, "Helvetica Neue", Arial, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: #1db954;
+  color: #000;
+}
