@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import SiteHeader from "../../components/SiteHeader";
 import { spotifyFetch } from "../../../lib/spotify";
 
@@ -11,9 +12,6 @@ type SpotifyImage = {
 type SpotifyArtist = {
   id: string;
   name: string;
-  external_urls?: {
-    spotify?: string;
-  };
 };
 
 type SpotifyTrack = {
@@ -21,106 +19,61 @@ type SpotifyTrack = {
   name: string;
   track_number: number;
   duration_ms: number;
-  explicit: boolean;
   artists: SpotifyArtist[];
-  external_urls?: {
-    spotify?: string;
-  };
 };
 
 type SpotifyAlbum = {
   id: string;
   name: string;
   album_type: string;
-  total_tracks: number;
   release_date: string;
   release_date_precision: string;
+  total_tracks: number;
   images: SpotifyImage[];
   artists: SpotifyArtist[];
+  tracks?: {
+    items: SpotifyTrack[];
+    total: number;
+  };
   external_urls?: {
     spotify?: string;
   };
 };
 
-type SpotifyAlbumTracksResponse = {
-  items: SpotifyTrack[];
-  total: number;
-  next: string | null;
-};
-
-async function getAlbum(id: string): Promise<SpotifyAlbum | null> {
+async function getAlbum(
+  id: string
+): Promise<SpotifyAlbum | null> {
   try {
-    const album = await spotifyFetch(`/albums/${id}`, {
+    const data = (await spotifyFetch(`/albums/${id}`, {
       market: "BR",
-    });
+    })) as SpotifyAlbum;
 
-    return album as SpotifyAlbum;
+    return data;
   } catch (error) {
-    console.error("Album request error:", error);
+    console.error("Spotify album request failed:", error);
     return null;
   }
 }
 
-async function getAlbumTracks(
-  id: string
-): Promise<SpotifyTrack[]> {
-  try {
-    const tracks: SpotifyTrack[] = [];
-
-    let offset = 0;
-    const limit = 50;
-
-    while (true) {
-      const data =
-        (await spotifyFetch(
-          `/albums/${id}/tracks`,
-          {
-            market: "BR",
-            limit: String(limit),
-            offset: String(offset),
-          }
-        )) as SpotifyAlbumTracksResponse;
-
-      tracks.push(...data.items);
-
-      if (!data.next || data.items.length === 0) {
-        break;
-      }
-
-      offset += data.items.length;
-
-      if (offset >= data.total) {
-        break;
-      }
-    }
-
-    return tracks;
-  } catch (error) {
-    console.error("Track request error:", error);
-    return [];
-  }
-}
-
-function formatTime(milliseconds: number) {
-  const totalSeconds = Math.floor(
-    milliseconds / 1000
-  );
-
-  const minutes = Math.floor(
-    totalSeconds / 60
-  );
-
+function formatTrackDuration(milliseconds: number) {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
 
-  return `${minutes}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function getTotalDuration(tracks: SpotifyTrack[]) {
+  const totalMilliseconds = tracks.reduce(
+    (total, track) => total + track.duration_ms,
+    0
+  );
+
+  return formatTrackDuration(totalMilliseconds);
 }
 
 function formatReleaseDate(date: string) {
-  if (!date) {
-    return "Unknown";
-  }
+  if (!date) return "";
 
   const parts = date.split("-");
 
@@ -135,17 +88,16 @@ function formatReleaseDate(date: string) {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-function getTotalDuration(tracks: SpotifyTrack[]) {
-  const total = tracks.reduce(
-    (sum, track) => sum + track.duration_ms,
-    0
-  );
+function getArtistNames(artists: SpotifyArtist[]) {
+  return artists.map((artist) => artist.name).join(", ");
+}
 
-  const totalMinutes = Math.floor(
-    total / 60000
-  );
+function getAlbumType(type: string) {
+  if (type === "album") return "Album";
+  if (type === "single") return "Single";
+  if (type === "compilation") return "Compilation";
 
-  return `${totalMinutes} min`;
+  return type;
 }
 
 export default async function AlbumPage({
@@ -155,36 +107,33 @@ export default async function AlbumPage({
 }) {
   const { id } = await params;
 
-  const [album, tracks] = await Promise.all([
-    getAlbum(id),
-    getAlbumTracks(id),
-  ]);
+  const album = await getAlbum(id);
 
   if (!album) {
     return (
       <div className="min-h-screen bg-[#121212] text-white">
         <SiteHeader />
 
-        <main className="pt-[113px] md:pt-[68px]">
-          <div className="musicboxd-container flex min-h-[70vh] items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#202020] text-2xl">
-                ?
-              </div>
+        <main className="pt-[62px]">
+          <div className="musicboxd-container flex min-h-[70vh] items-center justify-center py-20">
+            <div className="max-w-md text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#1db954]">
+                MUSICBOXD
+              </p>
 
-              <h1 className="mt-5 text-2xl font-black">
+              <h1 className="mt-3 text-3xl font-black tracking-tight">
                 Album not found
               </h1>
 
-              <p className="mt-2 text-sm text-[#888]">
-                We couldn't find this album on Spotify.
+              <p className="mt-4 text-sm leading-6 text-[#888]">
+                We couldn't load this album from Spotify.
               </p>
 
               <Link
-                href="/"
-                className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-bold text-black"
+                href="/musics"
+                className="mt-7 inline-flex rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.02]"
               >
-                Back to Musicboxd
+                Back to Musics
               </Link>
             </div>
           </div>
@@ -193,506 +142,406 @@ export default async function AlbumPage({
     );
   }
 
-  const cover = album.images?.[0]?.url;
+  const tracks = album.tracks?.items ?? [];
 
-  const artist =
-    album.artists?.map((item) => item.name).join(", ") ||
-    "Unknown Artist";
+  const cover =
+    album.images?.[0]?.url ?? "/musicboxd-logo.png";
+
+  const artist = getArtistNames(album.artists);
 
   const year =
-    album.release_date?.slice(0, 4) || "Unknown";
+    album.release_date?.slice(0, 4) ?? "";
 
-  const releaseDate = formatReleaseDate(
-    album.release_date
+  const releaseDate =
+    formatReleaseDate(album.release_date);
+
+  const duration =
+    tracks.length > 0
+      ? getTotalDuration(tracks)
+      : "--:--";
+
+  const albumType = getAlbumType(
+    album.album_type
   );
-
-  const spotifyUrl =
-    album.external_urls?.spotify || "#";
-
-  const totalDuration =
-    getTotalDuration(tracks);
 
   return (
     <div className="min-h-screen bg-[#121212] text-white">
       <SiteHeader />
 
-      <main className="pt-[113px] md:pt-[68px]">
+      <main className="pt-[62px]">
 
-        {/* ======================================== */}
-        {/* ALBUM HEADER */}
-        {/* ======================================== */}
+        {/* ================================================== */}
+        {/* ALBUM HERO                                         */}
+        {/* ================================================== */}
 
-        <section className="relative overflow-hidden border-b border-[#292929]">
+        <section className="relative overflow-hidden border-b border-[#242424]">
 
-          {/* BLURRED BACKGROUND */}
+          {/* BACKGROUND */}
 
-          {cover && (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <img
-                src={cover}
-                alt=""
-                className="absolute inset-0 h-full w-full scale-125 object-cover opacity-[0.12] blur-3xl"
-              />
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <img
+              src={cover}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-[0.12] blur-[70px]"
+            />
 
-              <div className="absolute inset-0 bg-gradient-to-b from-[#121212]/70 via-[#121212]/90 to-[#121212]" />
-            </div>
-          )}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#121212]/45 via-[#121212]/85 to-[#121212]" />
+          </div>
 
-          <div className="relative mx-auto max-w-[1480px] px-5 py-8 sm:px-6 md:px-8 md:py-12 lg:px-10">
+          {/* CONTENT */}
 
-            <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)_280px] lg:gap-10">
+          <div className="musicboxd-container relative py-10 md:py-14 lg:py-16">
 
-              {/* ================================= */}
-              {/* LEFT: COVER */}
-              {/* ================================= */}
+            <div className="grid gap-8 md:grid-cols-[300px_minmax(0,1fr)] md:items-end md:gap-10 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-12">
 
-              <div>
-                <div className="overflow-hidden rounded-2xl bg-[#1b1b1b] shadow-2xl shadow-black/50">
-                  {cover ? (
-                    <img
-                      src={cover}
-                      alt={`${album.name} cover`}
-                      className="aspect-square w-full object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full bg-[#222]" />
-                  )}
-                </div>
+              {/* COVER */}
 
-                {/* BASIC STATS */}
+              <div className="mx-auto w-full max-w-[300px] md:mx-0 md:max-w-none lg:w-[340px]">
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="group relative overflow-hidden rounded-2xl bg-[#1b1b1b] shadow-2xl shadow-black/40">
 
-                  <StatCard
-                    value={String(album.total_tracks)}
-                    label="Tracks"
+                  <img
+                    src={cover}
+                    alt={`${album.name} cover`}
+                    className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                   />
 
-                  <StatCard
-                    value={year}
-                    label="Released"
-                  />
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/10" />
 
                 </div>
 
-                <div className="mt-3 rounded-xl border border-[#292929] bg-[#181818] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#666]">
-                    Album type
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold capitalize">
-                    {album.album_type}
-                  </p>
-                </div>
               </div>
 
-              {/* ================================= */}
-              {/* CENTER: ALBUM INFO */}
-              {/* ================================= */}
+              {/* ALBUM INFO */}
 
-              <div className="flex min-w-0 flex-col justify-center">
+              <div className="min-w-0 pb-1">
 
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#1db954]">
-                  {album.album_type}
-                </p>
+                {/* TYPE */}
 
-                <h1 className="mt-3 text-4xl font-black leading-[0.98] tracking-[-0.04em] sm:text-5xl md:text-6xl">
+                <div className="mb-4">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
+                    {albumType}
+                  </span>
+                </div>
+
+                {/* TITLE */}
+
+                <h1 className="max-w-4xl text-4xl font-black leading-[0.96] tracking-[-0.045em] sm:text-5xl md:text-6xl">
                   {album.name}
                 </h1>
 
-                <p className="mt-4 text-xl font-bold text-white">
+                {/* ARTIST */}
+
+                <p className="mt-4 text-lg font-semibold text-[#b3b3b3] md:text-xl">
                   {artist}
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[#888]">
+                {/* METADATA */}
+
+                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-[#8c8c8c]">
+
                   <span>{year}</span>
 
-                  <span className="text-[#444]">
+                  <span className="text-[#4c4c4c]">
                     •
                   </span>
 
                   <span>
-                    {album.total_tracks} tracks
+                    {album.total_tracks}{" "}
+                    {album.total_tracks === 1
+                      ? "track"
+                      : "tracks"}
                   </span>
 
-                  {tracks.length > 0 && (
-                    <>
-                      <span className="text-[#444]">
-                        •
-                      </span>
+                  <span className="text-[#4c4c4c]">
+                    •
+                  </span>
 
-                      <span>
-                        {totalDuration}
-                      </span>
-                    </>
-                  )}
+                  <span>{duration}</span>
+
+                  <span className="text-[#4c4c4c]">
+                    •
+                  </span>
+
+                  <span>{releaseDate}</span>
+
                 </div>
 
-                <p className="mt-7 max-w-2xl text-sm leading-7 text-[#999]">
-                  {album.name} by {artist}. Explore
-                  the complete tracklist, listen on Spotify
-                  and keep your own Musicboxd history for
-                  this album.
-                </p>
+                {/* RATING */}
 
-                {/* ARTIST */}
-
-                <div className="mt-8 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#242424] text-sm font-black text-[#1db954]">
-                    {artist.charAt(0).toUpperCase()}
-                  </div>
+                <div className="mt-7 flex flex-wrap items-center gap-5">
 
                   <div>
-                    <p className="text-xs text-[#666]">
-                      Artist
-                    </p>
-
-                    <p className="text-sm font-bold">
-                      {artist}
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* ================================= */}
-              {/* RIGHT: ACTIONS */}
-              {/* ================================= */}
-
-              <div className="lg:self-center">
-
-                <div className="rounded-2xl border border-[#292929] bg-[#181818]/90 p-5 backdrop-blur-xl">
-
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#666]">
-                    Your activity
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-
-                    <button
-                      type="button"
-                      className="rounded-xl bg-white px-4 py-3 text-xs font-black text-black transition hover:bg-[#ddd]"
-                    >
-                      LOG
-                    </button>
-
-                    <button
-                      type="button"
-                      className="rounded-xl border border-[#383838] px-4 py-3 text-xs font-black text-white transition hover:bg-[#242424]"
-                    >
-                      ♡ LIKE
-                    </button>
-
-                  </div>
-
-                  <button
-                    type="button"
-                    className="mt-2 w-full rounded-xl border border-[#383838] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#242424]"
-                  >
-                    + ADD TO LIST
-                  </button>
-
-                  <a
-                    href={spotifyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 flex w-full items-center justify-center rounded-xl bg-[#1db954] px-4 py-3 text-xs font-black text-black transition hover:bg-[#1ed760]"
-                  >
-                    ▶ PLAY ON SPOTIFY
-                  </a>
-
-                  <div className="my-5 h-px bg-[#292929]" />
-
-                  {/* RATING */}
-
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#666]">
-                      Musicboxd rating
-                    </p>
-
-                    <div className="mt-3 flex items-end gap-3">
-                      <span className="text-4xl font-black">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black">
                         —
                       </span>
 
-                      <span className="pb-1 text-xs text-[#777]">
-                        No ratings yet
+                      <span className="text-xs font-bold text-[#555]">
+                        / 5
                       </span>
                     </div>
+
+                    <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#555]">
+                      Community rating
+                    </p>
                   </div>
 
-                  <div className="mt-5 space-y-2">
-                    <RatingBar
-                      stars="5"
-                      percentage={0}
-                    />
+                  <div className="h-9 w-px bg-[#333]" />
 
-                    <RatingBar
-                      stars="4"
-                      percentage={0}
-                    />
+                  <div>
+                    <p className="text-xs font-semibold text-[#ddd]">
+                      No ratings yet
+                    </p>
 
-                    <RatingBar
-                      stars="3"
-                      percentage={0}
-                    />
-
-                    <RatingBar
-                      stars="2"
-                      percentage={0}
-                    />
-
-                    <RatingBar
-                      stars="1"
-                      percentage={0}
-                    />
+                    <p className="mt-1 text-[11px] text-[#666]">
+                      Be the first to rate this album.
+                    </p>
                   </div>
+
+                </div>
+
+                {/* ACTIONS */}
+
+                <div className="mt-7 flex flex-wrap gap-2.5">
+
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-xs font-bold text-black transition-transform hover:scale-[1.02]"
+                  >
+                    ★ Rate
+                  </button>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-[#3a3a3a] bg-[#181818]/80 px-5 text-xs font-bold text-white transition-colors hover:border-[#666] hover:bg-[#212121]"
+                  >
+                    + Add to list
+                  </button>
+
+                  {album.external_urls?.spotify && (
+                    <a
+                      href={album.external_urls.spotify}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-[#3a3a3a] bg-[#181818]/80 px-5 text-xs font-bold text-white transition-colors hover:border-[#666] hover:bg-[#212121]"
+                    >
+                      Open Spotify
+                    </a>
+                  )}
 
                 </div>
 
               </div>
 
             </div>
+
           </div>
         </section>
 
-        {/* ======================================== */}
-        {/* MAIN CONTENT */}
-        {/* ======================================== */}
+        {/* ================================================== */}
+        {/* MAIN CONTENT                                       */}
+        {/* ================================================== */}
 
         <div className="musicboxd-container py-10 md:py-14">
 
-          <div className="mx-auto max-w-[1000px]">
+          {/* TRACKLIST */}
 
-            {/* ================================= */}
-            {/* TRACKLIST */}
-            {/* ================================= */}
+          <section>
 
-            <section>
+            <div className="mb-6 flex items-end justify-between gap-4">
 
-              <div className="mb-5 flex items-end justify-between">
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1db954]">
-                    THE ALBUM
-                  </p>
-
-                  <h2 className="mt-1 text-2xl font-black md:text-3xl">
-                    Tracklist
-                  </h2>
-                </div>
-
-                <span className="text-xs font-bold text-[#666]">
-                  {tracks.length} tracks
-                </span>
-
-              </div>
-
-              <div className="overflow-hidden rounded-2xl border border-[#292929] bg-[#181818]">
-
-                {tracks.length > 0 ? (
-                  <div>
-                    {tracks.map((track, index) => (
-                      <a
-                        key={`${track.id}-${index}`}
-                        href={
-                          track.external_urls?.spotify ||
-                          spotifyUrl
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group flex items-center gap-4 border-b border-[#292929] px-4 py-4 transition-colors last:border-b-0 hover:bg-[#202020] sm:px-6"
-                      >
-
-                        {/* NUMBER */}
-
-                        <span className="w-6 shrink-0 text-center text-xs font-bold tabular-nums text-[#555] group-hover:text-[#1db954]">
-                          {String(
-                            track.track_number
-                          ).padStart(2, "0")}
-                        </span>
-
-                        {/* PLAY */}
-
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs text-[#555] transition-colors group-hover:bg-[#1db954] group-hover:text-black">
-                          ▶
-                        </div>
-
-                        {/* NAME */}
-
-                        <div className="min-w-0 flex-1">
-
-                          <p className="truncate text-sm font-bold text-white">
-                            {track.name}
-                          </p>
-
-                          <p className="mt-0.5 truncate text-xs text-[#666]">
-                            {track.artists
-                              .map(
-                                (item) =>
-                                  item.name
-                              )
-                              .join(", ")}
-
-                            {track.explicit && (
-                              <span className="ml-2 rounded bg-[#303030] px-1.5 py-0.5 text-[9px] font-bold">
-                                E
-                              </span>
-                            )}
-                          </p>
-
-                        </div>
-
-                        {/* DURATION */}
-
-                        <span className="shrink-0 text-xs font-medium tabular-nums text-[#666]">
-                          {formatTime(
-                            track.duration_ms
-                          )}
-                        </span>
-
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-6 py-12 text-center">
-                    <p className="text-sm font-bold">
-                      Tracklist unavailable
-                    </p>
-
-                    <p className="mt-2 text-xs text-[#666]">
-                      Spotify couldn't return the tracks
-                      for this album.
-                    </p>
-                  </div>
-                )}
-
-              </div>
-            </section>
-
-            {/* ================================= */}
-            {/* COMMUNITY */}
-            {/* ================================= */}
-
-            <section className="mt-14 md:mt-20">
-
-              <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1db954]">
-                  COMMUNITY
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
+                  THE ALBUM
                 </p>
 
-                <h2 className="mt-1 text-2xl font-black md:text-3xl">
-                  Recent activity
+                <h2 className="mt-1 text-2xl font-black tracking-[-0.025em]">
+                  Tracklist
                 </h2>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <span className="text-xs font-medium text-[#666]">
+                {tracks.length} tracks
+              </span>
 
-                <CommunityCard
-                  username="musicboxd"
-                  rating="★★★★★"
-                  text="No reviews yet. Be the first person to log this album."
-                />
+            </div>
 
-                <CommunityCard
-                  username="musicboxd"
-                  rating="★★★★½"
-                  text="Community reviews and listening activity will appear here."
-                />
+            <div className="overflow-hidden rounded-2xl border border-[#292929] bg-[#181818]">
 
-              </div>
+              {tracks.length > 0 ? (
+                tracks.map((track, index) => (
+                  <div
+                    key={track.id}
+                    className="group flex items-center gap-4 border-b border-[#252525] px-4 py-3.5 transition-colors last:border-b-0 hover:bg-[#1d1d1d] md:px-5"
+                  >
 
-            </section>
+                    {/* NUMBER */}
 
-            {/* ================================= */}
-            {/* ALBUM DETAILS */}
-            {/* ================================= */}
+                    <span className="w-6 shrink-0 text-center text-xs tabular-nums text-[#555] group-hover:text-[#1db954]">
+                      {track.track_number || index + 1}
+                    </span>
 
-            <section className="mt-14 border-t border-[#292929] pt-10 md:mt-20">
+                    {/* NAME */}
 
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1db954]">
-                DETAILS
+                    <div className="min-w-0 flex-1">
+
+                      <p className="truncate text-sm font-semibold text-[#eee]">
+                        {track.name}
+                      </p>
+
+                      {track.artists?.length > 0 &&
+                        getArtistNames(track.artists) !== artist && (
+                          <p className="mt-0.5 truncate text-[10px] text-[#666]">
+                            {getArtistNames(track.artists)}
+                          </p>
+                        )}
+
+                    </div>
+
+                    {/* DURATION */}
+
+                    <span className="shrink-0 text-xs tabular-nums text-[#555]">
+                      {formatTrackDuration(
+                        track.duration_ms
+                      )}
+                    </span>
+
+                  </div>
+                ))
+              ) : (
+                <div className="px-6 py-10 text-center text-sm text-[#777]">
+                  Tracklist unavailable.
+                </div>
+              )}
+
+            </div>
+
+          </section>
+
+          {/* REVIEWS */}
+
+          <section className="mt-14 md:mt-16">
+
+            <div className="mb-6">
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
+                COMMUNITY
               </p>
 
-              <h2 className="mt-1 text-2xl font-black">
-                Album information
+              <h2 className="mt-1 text-2xl font-black tracking-[-0.025em]">
+                Reviews
               </h2>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            </div>
 
-                <DetailCard
-                  label="Release date"
-                  value={releaseDate}
-                />
+            <div className="rounded-2xl border border-[#292929] bg-[#181818] p-7 md:p-9">
 
-                <DetailCard
-                  label="Type"
-                  value={album.album_type}
-                />
+              <div className="mx-auto max-w-xl text-center">
 
-                <DetailCard
-                  label="Tracks"
-                  value={String(
-                    album.total_tracks
-                  )}
-                />
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#212121] text-[#777]">
+                  ✎
+                </div>
 
-                <DetailCard
-                  label="Duration"
-                  value={totalDuration}
-                />
+                <h3 className="mt-4 text-base font-bold">
+                  No reviews yet
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#777]">
+                  Be the first person to write a review
+                  for this album.
+                </p>
+
+                <button
+                  type="button"
+                  className="mt-5 rounded-full bg-[#212121] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#292929]"
+                >
+                  Write a review
+                </button>
 
               </div>
 
-            </section>
+            </div>
 
-          </div>
+          </section>
+
+          {/* ACTIVITY */}
+
+          <section className="mt-14 md:mt-16">
+
+            <div className="mb-6">
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
+                COMMUNITY
+              </p>
+
+              <h2 className="mt-1 text-2xl font-black tracking-[-0.025em]">
+                Activity
+              </h2>
+
+            </div>
+
+            <div className="rounded-2xl border border-[#292929] bg-[#181818] px-6 py-8">
+
+              <p className="text-center text-sm text-[#666]">
+                Ratings, reviews and listening activity
+                will appear here.
+              </p>
+
+            </div>
+
+          </section>
 
         </div>
 
-        {/* ======================================== */}
-        {/* FOOTER */}
-        {/* ======================================== */}
+        {/* ================================================== */}
+        {/* FOOTER                                             */}
+        {/* ================================================== */}
 
         <footer className="border-t border-[#242424]">
 
           <div className="musicboxd-container flex flex-col gap-5 py-8 text-xs text-[#626262] sm:flex-row sm:items-center sm:justify-between">
 
             <div className="flex items-center gap-2">
-              <img
+
+              <Image
                 src="/musicboxd-logo.png"
-                alt=""
+                alt="Musicboxd"
+                width={24}
+                height={24}
                 className="h-6 w-6 object-contain opacity-60"
               />
 
               <span className="font-semibold">
                 MUSICBOXD
               </span>
+
             </div>
 
             <div className="flex gap-5">
+
               <Link
                 href="/"
                 className="transition-colors hover:text-[#a7a7a7]"
               >
-                Home
+                About
               </Link>
 
               <Link
-                href="/lists"
+                href="/"
                 className="transition-colors hover:text-[#a7a7a7]"
               >
-                Lists
+                Privacy
               </Link>
 
-              <a
-                href={spotifyUrl}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href="/"
                 className="transition-colors hover:text-[#a7a7a7]"
               >
-                Spotify
-              </a>
+                Terms
+              </Link>
+
             </div>
 
             <span>
@@ -704,129 +553,6 @@ export default async function AlbumPage({
         </footer>
 
       </main>
-    </div>
-  );
-}
-
-/* ======================================== */
-/* STAT CARD                                */
-/* ======================================== */
-
-function StatCard({
-  value,
-  label,
-}: {
-  value: string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#292929] bg-[#181818] p-4">
-      <p className="text-xl font-black">
-        {value}
-      </p>
-
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#666]">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-/* ======================================== */
-/* RATING BAR                               */
-/* ======================================== */
-
-function RatingBar({
-  stars,
-  percentage,
-}: {
-  stars: string;
-  percentage: number;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-
-      <span className="w-3 text-[10px] font-bold text-[#777]">
-        {stars}
-      </span>
-
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#292929]">
-        <div
-          className="h-full rounded-full bg-[#777]"
-          style={{
-            width: `${percentage}%`,
-          }}
-        />
-      </div>
-
-    </div>
-  );
-}
-
-/* ======================================== */
-/* COMMUNITY CARD                           */
-/* ======================================== */
-
-function CommunityCard({
-  username,
-  rating,
-  text,
-}: {
-  username: string;
-  rating: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-[#292929] bg-[#181818] p-5">
-
-      <div className="flex items-center gap-3">
-
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#252525] text-xs font-black text-[#1db954]">
-          {username.charAt(0).toUpperCase()}
-        </div>
-
-        <div>
-          <p className="text-xs font-bold">
-            {username}
-          </p>
-
-          <p className="mt-0.5 text-[11px] tracking-wide text-[#1db954]">
-            {rating}
-          </p>
-        </div>
-
-      </div>
-
-      <p className="mt-4 text-sm leading-6 text-[#999]">
-        {text}
-      </p>
-
-    </div>
-  );
-}
-
-/* ======================================== */
-/* DETAIL CARD                              */
-/* ======================================== */
-
-function DetailCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#292929] bg-[#181818] p-4">
-
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#666]">
-        {label}
-      </p>
-
-      <p className="mt-2 text-sm font-bold capitalize">
-        {value}
-      </p>
-
     </div>
   );
 }

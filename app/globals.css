@@ -1,15 +1,33 @@
 @import "tailwindcss";
 
+/* =========================================================
+   MUSICBOXD DESIGN SYSTEM
+   ========================================================= */
+
 :root {
   --musicboxd-green: #1db954;
+
   --musicboxd-background: #121212;
   --musicboxd-surface: #181818;
   --musicboxd-surface-2: #1f1f1f;
   --musicboxd-surface-3: #242424;
+
   --musicboxd-border: #2a2a2a;
-  --musicboxd-gray: #6b6b6b;
+
+  --musicboxd-text: #ffffff;
   --musicboxd-text-secondary: #a7a7a7;
+  --musicboxd-text-muted: #707070;
+
+  --musicboxd-radius-sm: 8px;
+  --musicboxd-radius-md: 12px;
+  --musicboxd-radius-lg: 16px;
+
+  --musicboxd-container: 1240px;
 }
+
+/* =========================================================
+   RESET
+   ========================================================= */
 
 * {
   box-sizing: border-box;
@@ -23,14 +41,15 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+
   background: var(--musicboxd-background);
-  color: white;
+  color: var(--musicboxd-text);
+
   font-family:
-    Gotham,
-    "Helvetica Neue",
-    Helvetica,
     Arial,
+    Helvetica,
     sans-serif;
+
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -53,6 +72,7 @@ a {
 
 img {
   display: block;
+  max-width: 100%;
 }
 
 ::selection {
@@ -60,13 +80,17 @@ img {
   color: #000;
 }
 
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #121212;
+  background: var(--musicboxd-background);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -78,70 +102,236 @@ img {
   background: #4a4a4a;
 }
 
-/* -------------------------------- */
-/* MUSICBOXD UTILITIES               */
-/* -------------------------------- */
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
 
 .musicboxd-container {
   width: 100%;
-  max-width: 1480px;
-  margin: 0 auto;
-  padding-left: 32px;
-  padding-right: 32px;
+  max-width: var(--musicboxd-container);
+
+  margin-left: auto;
+  margin-right: auto;
+
+  padding-left: 24px;
+  padding-right: 24px;
 }
+
+/* =========================================================
+   TEXT
+   ========================================================= */
+
+.musicboxd-eyebrow {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--musicboxd-green);
+}
+
+.musicboxd-title {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.musicboxd-section-title {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.musicboxd-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--musicboxd-text-secondary);
+}
+
+.musicboxd-small {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--musicboxd-text-secondary);
+}
+
+.musicboxd-muted {
+  color: var(--musicboxd-text-muted);
+}
+
+/* =========================================================
+   DIVIDERS
+   ========================================================= */
 
 .musicboxd-divider {
   border-color: var(--musicboxd-border);
 }
 
-.musicboxd-muted {
-  color: var(--musicboxd-text-secondary);
-}
-
-/* -------------------------------- */
-/* HOVER EFFECTS                     */
-/* -------------------------------- */
+/* =========================================================
+   CARDS
+   ========================================================= */
 
 .musicboxd-card {
+  border: 1px solid var(--musicboxd-border);
+  border-radius: var(--musicboxd-radius-md);
+  background: var(--musicboxd-surface);
+
   transition:
-    transform 180ms ease,
     background-color 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease,
+    transform 180ms ease;
 }
 
 .musicboxd-card:hover {
   background: var(--musicboxd-surface-2);
+  border-color: #363636;
 }
+
+/* =========================================================
+   ALBUM COVERS
+   ========================================================= */
 
 .musicboxd-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+
   transition:
-    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    filter 300ms ease;
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 260ms ease;
 }
 
-.musicboxd-card:hover .musicboxd-cover {
-  transform: scale(1.035);
+.musicboxd-cover-wrapper {
+  overflow: hidden;
+  border-radius: var(--musicboxd-radius-md);
+  background: #1b1b1b;
 }
 
-/* -------------------------------- */
-/* SEARCH                            */
-/* -------------------------------- */
+.musicboxd-cover-wrapper:hover .musicboxd-cover {
+  transform: scale(1.025);
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.musicboxd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 36px;
+
+  border-radius: 999px;
+  border: 1px solid transparent;
+
+  padding: 0 15px;
+
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.musicboxd-button:hover {
+  transform: translateY(-1px);
+}
+
+.musicboxd-button-primary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.musicboxd-button-primary:hover {
+  background: #e8e8e8;
+}
+
+.musicboxd-button-secondary {
+  background: var(--musicboxd-surface-2);
+  border-color: #363636;
+  color: #ffffff;
+}
+
+.musicboxd-button-secondary:hover {
+  background: var(--musicboxd-surface-3);
+  border-color: #4a4a4a;
+}
+
+.musicboxd-button-ghost {
+  background: transparent;
+  color: var(--musicboxd-text-secondary);
+}
+
+.musicboxd-button-ghost:hover {
+  color: #ffffff;
+  background: var(--musicboxd-surface-2);
+}
+
+/* =========================================================
+   ICON BUTTONS
+   ========================================================= */
+
+.musicboxd-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  border: 1px solid transparent;
+  border-radius: 50%;
+
+  background: transparent;
+  color: var(--musicboxd-text-secondary);
+
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.musicboxd-icon-button:hover {
+  background: var(--musicboxd-surface-2);
+  border-color: var(--musicboxd-border);
+  color: #ffffff;
+}
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
 input::placeholder {
-  color: #6f6f6f;
+  color: #666666;
 }
 
 input:focus {
   outline: none;
 }
 
-/* -------------------------------- */
-/* MOBILE                            */
-/* -------------------------------- */
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 @media (max-width: 768px) {
   .musicboxd-container {
-    padding-left: 18px;
-    padding-right: 18px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .musicboxd-title {
+    font-size: 26px;
+  }
+
+  .musicboxd-section-title {
+    font-size: 21px;
   }
 }
