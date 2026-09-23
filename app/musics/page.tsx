@@ -26,212 +26,435 @@ type SpotifySearchResponse = {
   };
 };
 
-const discoveryQueries = [
-  "Frank Ocean",
-  "Kendrick Lamar",
-  "SZA",
-  "Tyler The Creator",
-  "Travis Scott",
-  "Drake",
-  "The Weeknd",
-  "Radiohead",
-  "Kanye West",
-  "Playboi Carti",
-  "Mac Miller",
-  "Tame Impala",
-];
-
-async function searchAlbums(query: string) {
+async function searchAlbum(query: string) {
   try {
     const data = (await spotifyFetch("/search", {
       q: query,
       type: "album",
       market: "BR",
-      limit: "4",
+      limit: "1",
     })) as SpotifySearchResponse;
 
-    return data.albums?.items ?? [];
+    return data.albums?.items?.[0] ?? null;
   } catch {
-    return [];
+    return null;
   }
 }
 
-async function getDiscoveryAlbums() {
+async function getAlbums(queries: string[]) {
   const results = await Promise.all(
-    discoveryQueries.map((query) => searchAlbums(query))
+    queries.map((query) => searchAlbum(query))
   );
 
-  const albums = results.flat();
+  return results.filter(Boolean) as SpotifyAlbum[];
+}
 
-  const uniqueAlbums = Array.from(
-    new Map(albums.map((album) => [album.id, album])).values()
-  );
+async function getPopularAlbums() {
+  return getAlbums([
+    "Blonde Frank Ocean",
+    "GNX Kendrick Lamar",
+    "SOS SZA",
+    "UTOPIA Travis Scott",
+  ]);
+}
 
-  return uniqueAlbums;
+async function getRecentlyAdded() {
+  return getAlbums([
+    "Channel Orange Frank Ocean",
+    "IGOR Tyler The Creator",
+    "Currents Tame Impala",
+    "After Hours The Weeknd",
+  ]);
 }
 
 export default async function MusicsPage() {
-  const albums = await getDiscoveryAlbums();
+  const [popularAlbums, recentlyAdded] = await Promise.all([
+    getPopularAlbums(),
+    getRecentlyAdded(),
+  ]);
+
+  const staffAlbums = popularAlbums.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#121212] text-white">
+
       <SiteHeader />
 
       <main className="pt-[113px] md:pt-[62px]">
-        {/* PAGE HEADER */}
+
+        {/* browse */}
+
         <section className="border-b border-[#242424]">
-          <div className="musicboxd-container py-10 md:py-14">
-            <div className="max-w-3xl">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#1db954]">
-                DISCOVER
-              </p>
+          <div className="musicboxd-container max-w-[1080px] py-6 md:py-7">
 
-              <h1 className="mt-2 text-3xl font-black tracking-[-0.035em] sm:text-4xl md:text-5xl">
-                Musics
-              </h1>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#8f8f8f] md:text-base">
-                Explore albums, discover new artists and find something worth
-                adding to your history.
-              </p>
-            </div>
-          </div>
-        </section>
+              <div className="flex flex-wrap items-center gap-2">
 
-        {/* FILTERS */}
-        <section className="border-b border-[#242424] bg-[#151515]">
-          <div className="musicboxd-container py-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <FilterButton label="Year" />
-              <FilterButton label="Rating" />
-              <FilterButton label="Popular" />
-              <FilterButton label="Genre" />
+                <span className="mr-1 text-[10px] font-bold tracking-[0.12em] text-[#666]">
+                  browse by
+                </span>
 
-              <div className="ml-auto hidden text-[10px] font-bold uppercase tracking-[0.16em] text-[#555] sm:block">
-                {albums.length} albums
+                <BrowseButton label="year" />
+                <BrowseButton label="rating" />
+                <BrowseButton label="popular" />
+                <BrowseButton label="genre" />
+                <BrowseButton label="type" />
+                <BrowseButton label="other" />
+
               </div>
+
+              <div className="w-full lg:w-[250px]">
+
+                <div className="relative">
+
+                  <input
+                    type="text"
+                    placeholder="find music..."
+                    className="h-9 w-full rounded-full border border-[#303030] bg-[#181818] px-4 pr-10 text-xs text-white placeholder:text-[#5f5f5f] transition-colors focus:border-[#4a4a4a]"
+                  />
+
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#666]">
+                    ⌕
+                  </span>
+
+                </div>
+
+              </div>
+
             </div>
+
           </div>
         </section>
 
-        {/* ALBUM GRID */}
-        <section className="musicboxd-container py-10 md:py-12">
-          <div className="mb-7 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1db954]">
-                EXPLORE
-              </p>
+        {/* popular */}
 
-              <h2 className="mt-1 text-xl font-black tracking-[-0.025em] sm:text-2xl">
-                Discover albums
-              </h2>
-            </div>
-          </div>
+        <section className="musicboxd-container max-w-[1080px] py-9 md:py-11">
 
-          {albums.length > 0 ? (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {albums.map((album) => (
-                <MusicAlbumCard key={album.id} album={album} />
+          <SectionHeading
+            title="popular music this week"
+            action="more"
+            href="/lists"
+          />
+
+          {popularAlbums.length > 0 ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-4">
+
+              {popularAlbums.map((album) => (
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                />
               ))}
+
             </div>
           ) : (
-            <div className="rounded-2xl border border-[#292929] bg-[#181818] p-8 text-sm text-[#888]">
-              Spotify não conseguiu carregar os álbuns agora.
-            </div>
+            <EmptyState />
           )}
+
         </section>
+
+        {/* staff pick */}
+
+        <section className="border-y border-[#242424] bg-[#151515]">
+
+          <div className="musicboxd-container max-w-[1080px] py-9 md:py-11">
+
+            <SectionHeading
+              title="musicboxd staff pick"
+              action="more"
+              href="/lists"
+            />
+
+            <div className="overflow-hidden rounded-xl border border-[#292929] bg-[#181818]">
+
+              <div className="grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+
+                {/* 2x2 covers */}
+
+                <div className="grid grid-cols-2 gap-px bg-[#292929]">
+
+                  {staffAlbums.length > 0 ? (
+                    staffAlbums.map((album) => (
+                      <Link
+                        key={album.id}
+                        href={`/album/${album.id}`}
+                        className="group relative aspect-square overflow-hidden bg-[#1b1b1b]"
+                      >
+
+                        <img
+                          src={album.images?.[0]?.url}
+                          alt={album.name}
+                          className="h-full w-full object-cover"
+                        />
+
+                        <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-white/10 bg-black/90 px-3 py-2 opacity-0 shadow-xl backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100">
+
+                          <div className="flex items-center justify-between gap-3">
+
+                            <p className="min-w-0 truncate text-[11px] font-bold text-white">
+                              {album.name.toLowerCase()}
+                            </p>
+
+                            <span className="shrink-0 text-[10px] text-[#888]">
+                              {album.release_date?.slice(0, 4)}
+                            </span>
+
+                          </div>
+
+                        </div>
+
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="col-span-2 aspect-square bg-[#1b1b1b]" />
+                  )}
+
+                </div>
+
+                {/* editorial */}
+
+                <div className="flex flex-col justify-center p-7 md:p-9">
+
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-[#1db954]">
+                    editor&apos;s choice
+                  </p>
+
+                  <h3 className="mt-3 text-2xl font-black leading-tight tracking-[-0.035em] md:text-3xl">
+                    albums worth coming back to
+                  </h3>
+
+                  <p className="mt-4 max-w-lg text-sm leading-6 text-[#929292]">
+                    a selection of albums chosen by the musicboxd team.
+                    records that stay interesting long after the first listen.
+                  </p>
+
+                  <div className="mt-6 flex items-center gap-3">
+
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#292929] text-[11px] font-bold">
+                      n
+                    </div>
+
+                    <div>
+
+                      <p className="text-xs font-bold text-white">
+                        selected by musicboxd
+                      </p>
+
+                      <p className="mt-0.5 text-[10px] text-[#666]">
+                        staff selection
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <Link
+                    href="/lists"
+                    className="mt-7 inline-flex w-fit rounded-full bg-white px-5 py-2.5 text-xs font-bold !text-black transition-colors hover:bg-[#e8e8e8]"
+                 >
+                    explore list
+                  </Link>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* recently added */}
+
+        <section className="musicboxd-container max-w-[1080px] py-9 md:py-11">
+
+          <SectionHeading
+            title="recently added"
+            action="more"
+            href="/musics"
+          />
+
+          {recentlyAdded.length > 0 ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-4">
+
+              {recentlyAdded.map((album) => (
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                />
+              ))}
+
+            </div>
+          ) : (
+            <EmptyState />
+          )}
+
+        </section>
+
       </main>
 
-      {/* FOOTER */}
+      {/* footer */}
+
       <footer className="border-t border-[#242424]">
-        <div className="musicboxd-container flex flex-col gap-4 py-8 text-xs text-[#626262] sm:flex-row sm:items-center sm:justify-between">
+
+        <div className="musicboxd-container max-w-[1080px] flex flex-col gap-4 py-7 text-xs text-[#626262] sm:flex-row sm:items-center sm:justify-between">
+
           <div className="flex items-center gap-2">
+
             <img
               src="/musicboxd-logo.png"
               alt=""
               className="h-6 w-6 object-contain opacity-60"
             />
 
-            <span className="font-semibold">MUSICBOXD</span>
+            <span className="font-semibold">
+              musicboxd
+            </span>
+
           </div>
 
-          <span>© 2026 Musicboxd</span>
+          <div className="flex gap-5">
+
+            <Link
+              href="/"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              home
+            </Link>
+
+            <Link
+              href="/musics"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              musics
+            </Link>
+
+            <Link
+              href="/lists"
+              className="transition-colors hover:text-[#a7a7a7]"
+            >
+              lists
+            </Link>
+
+          </div>
+
+          <span>
+            © 2026 musicboxd
+          </span>
+
         </div>
+
       </footer>
+
     </div>
   );
 }
 
-/* -------------------------------- */
-/* FILTER BUTTON                    */
-/* -------------------------------- */
+function SectionHeading({
+  title,
+  action,
+  href,
+}: {
+  title: string;
+  action?: string;
+  href?: string;
+}) {
+  return (
+    <div className="mb-6 flex items-center justify-between gap-4">
 
-function FilterButton({ label }: { label: string }) {
+      <h2 className="text-[19px] font-black tracking-[-0.025em] sm:text-[21px]">
+        {title}
+      </h2>
+
+      {action && href ? (
+        <Link
+          href={href}
+          className="text-[10px] font-bold tracking-[0.1em] text-[#777] transition-colors hover:text-white"
+        >
+          {action}
+        </Link>
+      ) : null}
+
+    </div>
+  );
+}
+
+function BrowseButton({
+  label,
+}: {
+  label: string;
+}) {
   return (
     <button
       type="button"
-      className="inline-flex h-9 items-center gap-2 rounded-full border border-[#303030] bg-[#191919] px-4 text-[11px] font-bold text-[#a5a5a5] transition-colors hover:border-[#4a4a4a] hover:bg-[#222] hover:text-white"
+      className="inline-flex h-9 items-center gap-2 rounded-full border border-[#303030] bg-[#181818] px-4 text-[10px] font-bold tracking-[0.04em] text-[#858585] transition-all duration-150 hover:border-[#464646] hover:bg-[#202020] hover:text-white"
     >
       {label}
 
-      <span className="text-[10px] text-[#666]">⌄</span>
+      <span className="text-[9px] text-[#5f5f5f]">
+        ⌄
+      </span>
+
     </button>
   );
 }
 
-/* -------------------------------- */
-/* ALBUM CARD                       */
-/* -------------------------------- */
-
-function MusicAlbumCard({ album }: { album: SpotifyAlbum }) {
+function AlbumCard({
+  album,
+}: {
+  album: SpotifyAlbum;
+}) {
   const image = album.images?.[0]?.url;
-  const artist = album.artists?.[0]?.name ?? "Unknown artist";
   const year = album.release_date?.slice(0, 4) ?? "";
 
   return (
     <Link
       href={`/album/${album.id}`}
-      className="group min-w-0"
+      className="group block min-w-0"
     >
+
       <div className="relative overflow-hidden rounded-xl bg-[#1b1b1b]">
+
         {image ? (
           <img
             src={image}
             alt={album.name}
-            className="aspect-square w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.025]"
+            className="aspect-square w-full object-cover"
           />
         ) : (
           <div className="aspect-square w-full bg-[#222]" />
         )}
 
-        {/* DARK HOVER */}
-        <div className="absolute inset-0 bg-black/10 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+        {/* hover bubble */}
 
-        {/* ALBUM INFO BUBBLE */}
-        <div className="pointer-events-none absolute inset-x-2 bottom-2 translate-y-2 rounded-lg border border-white/10 bg-black/90 px-3 py-2.5 opacity-0 shadow-2xl backdrop-blur-md transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
-          <p className="truncate text-[11px] font-bold text-white">
-            {album.name}
-          </p>
+        <div className="pointer-events-none absolute bottom-2 left-2 right-2 translate-y-1 rounded-lg border border-white/10 bg-black/90 px-3 py-2.5 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
 
-          <p className="mt-0.5 text-[10px] text-[#999]">
-            {year}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+
+            <p className="min-w-0 truncate text-[11px] font-bold text-white">
+              {album.name.toLowerCase()}
+            </p>
+
+            <span className="shrink-0 text-[10px] text-[#888]">
+              {year}
+            </span>
+
+          </div>
+
         </div>
+
       </div>
 
-      <div className="mt-3 min-w-0">
-        <h3 className="truncate text-[13px] font-bold text-white">
-          {album.name}
-        </h3>
-
-        <p className="mt-1 truncate text-[11px] text-[#858585]">
-          {artist}
-        </p>
-
-        <p className="mt-1 text-[10px] text-[#555]">
-          {year}
-        </p>
-      </div>
     </Link>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-xl border border-[#292929] bg-[#181818] p-7 text-sm text-[#777]">
+      music could not be loaded right now.
+    </div>
   );
 }

@@ -148,8 +148,8 @@ export default function SiteHeader() {
 
             <Link
               href="/"
-              className="ml-2 inline-flex h-8 items-center rounded-full bg-white px-4 text-[11px] font-bold text-black transition-colors hover:bg-[#e5e5e5]"
-            >
+              className="ml-2 inline-flex h-8 items-center rounded-full bg-white px-4 text-[11px] font-bold !text-black transition-colors hover:bg-[#e5e5e5]"
+             >
               + LOG
             </Link>
 
